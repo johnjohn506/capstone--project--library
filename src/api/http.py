@@ -15,7 +15,7 @@ BASE_URL = "https://openlibrary.org"
 DEFAULT_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0)
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_BACKOFF_SECONDS = 0.5
-USER_AGENT = "capstone-project/0.1 (Open Library catalog tool)"
+USER_AGENT = "capstone-project/1.0.0 (Open Library catalog tool)"
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
