@@ -2,19 +2,26 @@
 # This file contains the HTTP client for the Open Library API.
 
 import re
+import ssl
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 
 import httpx
+import truststore
 
 from exceptions import APIError, DataValidationError, ResourceNotFoundError
 
 BASE_URL = "https://openlibrary.org"
-DEFAULT_TIMEOUT = 10.0
+DEFAULT_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=10.0, pool=10.0)
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_BACKOFF_SECONDS = 0.5
 USER_AGENT = "capstone-project/0.1 (Open Library catalog tool)"
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+def default_ssl_context() -> ssl.SSLContext:
+    """Trust the certificates installed on this machine."""
+    return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
 
 def require_text(value: str, field: str) -> str:

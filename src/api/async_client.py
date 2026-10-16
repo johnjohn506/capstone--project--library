@@ -13,6 +13,7 @@ from api.http import (
     RETRYABLE_STATUS_CODES,
     USER_AGENT,
     author_works_path,
+    default_ssl_context,
     normalize_subject,
     raise_for_status,
     require_text,
@@ -29,7 +30,7 @@ class AsyncLibraryClient:
         self,
         *,
         base_url: str = BASE_URL,
-        timeout: float = DEFAULT_TIMEOUT,
+        timeout: float | httpx.Timeout = DEFAULT_TIMEOUT,
         max_retries: int = DEFAULT_MAX_RETRIES,
         backoff_seconds: float = DEFAULT_BACKOFF_SECONDS,
         client: httpx.AsyncClient | None = None,
@@ -112,16 +113,23 @@ class AsyncLibraryClient:
                 continue
             raise_for_status(response)
             return response.json()
-        raise APIError(
-            f"Open Library request failed after {self.max_retries + 1} attempts: {url}",
-            url=url,
-        ) from last_error
+        detail = (
+            f"{type(last_error).__name__}: {last_error}"
+            if last_error
+            else "no response"
+        )
+        message = (
+            f"Open Library request failed after {self.max_retries + 1} "
+            f"attempts ({detail}): {url}"
+        )
+        raise APIError(message, url=url) from last_error
 
     def _http(self) -> httpx.AsyncClient:
         """Get the HTTP client."""
         if self._client is None:
             self._client = httpx.AsyncClient(
                 timeout=self.timeout,
+                verify=default_ssl_context(),
                 headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
             )
         return self._client
