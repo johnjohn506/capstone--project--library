@@ -1,0 +1,100 @@
+# src/api/http.py
+# This file contains the HTTP client for the Open Library API.
+import re
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
+
+import httpx
+
+from exceptions import APIError, DataValidationError, ResourceNotFoundError
+
+# The base URL for the Open Library API.
+BASE_URL = "https://openlibrary.org"
+DEFAULT_TIMEOUT = 10.0
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_BACKOFF_SECONDS = 0.5
+# The user agent for HTTP requests.
+USER_AGENT = "capstone-project/0.1 (Open Library catalog tool)"
+# The retryable status codes for HTTP requests.
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
+
+# Require a non-empty text value.
+def require_text(value: str, field: str) -> str:
+    cleaned = value.strip()
+    if not cleaned:
+        raise DataValidationError(f"{field} is empty.", field=field)
+    return cleaned
+
+
+# Normalize the subject.
+def normalize_subject(subject: str) -> str:
+    cleaned = "_".join(subject.strip().lower().split())
+    if not cleaned or re.fullmatch(r"[\w]+", cleaned) is None:
+        raise DataValidationError(
+            "Subject contains no usable characters.",
+            field="subject",
+        )
+    return cleaned
+
+
+# Get the path for the work.
+def work_path(work_id: str) -> str:
+    work_id = require_text(work_id, "work_id")
+    work_id = work_id.removeprefix("/works/").removesuffix(".json")
+    return f"/works/{work_id}.json"
+
+
+# Get the path for the author's works.
+def author_works_path(author_id: str) -> str:
+    author_id = require_text(author_id, "author_id")
+    author_id = author_id.removeprefix("/authors/").removesuffix("/works.json")
+    return f"/authors/{author_id}/works.json"
+
+
+# Get the retry delay seconds.
+def retry_delay_seconds(
+    response: httpx.Response | None,
+    attempt: int,
+    base_seconds: float,
+) -> float:
+    if response is not None and response.status_code == 429:
+        delay = _retry_after_seconds(response.headers.get("Retry-After"))
+        if delay is not None:
+            return delay
+    return base_seconds * (2**attempt)
+
+
+# Raise an exception for the response.
+def raise_for_status(response: httpx.Response) -> None:
+    if response.status_code < 400:
+        return
+    url = str(response.url)
+    if response.status_code == 404:
+        raise ResourceNotFoundError(
+            f"Open Library resource not found: {url}",
+            status_code=404,
+            url=url,
+        )
+    raise APIError(
+        f"Open Library request failed with status {response.status_code}: {url}",
+        status_code=response.status_code,
+        url=url,
+    )
+
+
+# Get the retry after seconds.
+def _retry_after_seconds(value: str | None) -> float | None:
+    if value is None:
+        return None
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return max(0.0, (when - datetime.now(UTC)).total_seconds())
