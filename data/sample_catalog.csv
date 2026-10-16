@@ -1,0 +1,5 @@
+title,isbn,work_id,description,first_publish_year,languages,subjects,author_ids
+The Hobbit,9780547928227,OL45804W,A fantasy novel,1937,eng,"fantasy,adventure",OL26320A
+The Hobbit,9780547928227,OL45804W,duplicate row,1937,eng,fantasy,OL26320A
+,9780000000000,,,,,
+The Left Hand of Darkness,9780441478125,,A novel,1969,eng,science fiction,OL123A
