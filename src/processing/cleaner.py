@@ -73,8 +73,7 @@ def _isbn10_ok(isbn: str) -> bool:
 def _isbn13_ok(isbn: str) -> bool:
     """Return whether the ISBN-13 is valid."""
     total = sum(
-        int(digit) * (1 if index % 2 == 0 else 3)
-        for index, digit in enumerate(isbn)
+        int(digit) * (1 if index % 2 == 0 else 3) for index, digit in enumerate(isbn)
     )
     return total % 10 == 0
 
@@ -83,6 +82,5 @@ def _overlaps(span: tuple[int, int], occupied: list[tuple[int, int]]) -> bool:
     """Return whether the span overlaps with any of the occupied spans."""
     start, end = span
     return any(
-        start < other_end and other_start < end
-        for other_start, other_end in occupied
+        start < other_end and other_start < end for other_start, other_end in occupied
     )

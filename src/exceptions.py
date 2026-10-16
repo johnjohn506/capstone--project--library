@@ -1,6 +1,7 @@
 # src/exceptions.py
 # This file contains the custom exceptions for the library.
 
+
 class LibraryError(Exception):
     """Base class for errors raised by this application."""
 

@@ -233,8 +233,10 @@ class CLIApp:
     def _search_local(self, query: str) -> list[sqlite3.Row]:
         """Search local database for books by author/title/ISBN."""
         pattern = f"%{query}%"
-        return self.database.connect().execute(
-            """
+        return (
+            self.database.connect()
+            .execute(
+                """
             SELECT DISTINCT
                 w.work_id,
                 w.title,
@@ -248,8 +250,10 @@ class CLIApp:
                OR a.name LIKE ?
             ORDER BY w.title
             """,
-            (pattern, pattern, pattern),
-        ).fetchall()
+                (pattern, pattern, pattern),
+            )
+            .fetchall()
+        )
 
     def _works_frame(self) -> pd.DataFrame:
         """Get works frame from database."""
@@ -268,18 +272,24 @@ class CLIApp:
     def _count(self, table: str) -> int:
         if table not in {"works", "authors", "api_cache"}:
             raise DataValidationError("Unknown table.", field="table")
-        row = self.database.connect().execute(
-            f"SELECT COUNT(*) AS total FROM {table}"
-        ).fetchone()
+        row = (
+            self.database.connect()
+            .execute(f"SELECT COUNT(*) AS total FROM {table}")
+            .fetchone()
+        )
         return int(row["total"])
 
     def _hit_ratio(self) -> float:
-        row = self.database.connect().execute(
-            """
+        row = (
+            self.database.connect()
+            .execute(
+                """
             SELECT COALESCE(SUM(hit_count), 0) AS hits, COUNT(*) AS entries
             FROM api_cache
             """
-        ).fetchone()
+            )
+            .fetchone()
+        )
         fetches = int(row["hits"]) + int(row["entries"])
         if fetches == 0:
             return 0.0
